@@ -110,15 +110,34 @@ This app is intended to run on **Vercel** with secrets in **Project Settings →
 - In Clerk, add `https://<your-vercel-domain>` to allowed redirects/origins
 - Smoke-test: sign up as tradesperson + customer in two windows, submit a job, accept, watch simulated map movement
 
-### CLI (optional)
+## Seed mock data
 
-If you use the Vercel CLI with `VERCEL_TOKEN` set:
+After Supabase is configured, populate realistic London test data.
+
+### From iPad / browser (recommended)
+
+1. In **Vercel → Project Settings → Environment Variables**, add:
+   - `SEED_SECRET` — any long random string you choose (e.g. `my-demo-seed-2026-xK9p`)
+2. Redeploy (or wait for the env var to apply).
+3. Open in Safari:
+
+```
+https://<your-vercel-domain>/api/admin/seed?key=<your-SEED_SECRET>
+```
+
+You’ll see a simple HTML page with progress logs. **Idempotent** — visiting twice skips duplicates.
+
+Remove `SEED_SECRET` from Vercel when you’re done seeding.
+
+### From terminal (optional)
 
 ```bash
-npx vercel link
-npx vercel env pull .env.local   # local dev only
-npx vercel --prod
+export NEXT_PUBLIC_SUPABASE_URL=...
+export SUPABASE_SERVICE_ROLE_KEY=...
+npm run seed
 ```
+
+Creates **2,000 mock tradespeople** (5 trade types, spread across Greater London), **500 historical jobs** (last 30 days), and mock customers.
 
 ## License
 

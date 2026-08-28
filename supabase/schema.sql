@@ -3,7 +3,8 @@
 
 -- Custom types
 CREATE TYPE user_role AS ENUM ('customer', 'tradesperson');
-CREATE TYPE trade_type AS ENUM ('handyman', 'painter', 'mover', 'cleaner');
+CREATE TYPE trade_type AS ENUM ('handyman', 'painter', 'mover', 'cleaner', 'plumber');
+CREATE TYPE service_tier AS ENUM ('priority', 'within_12h', 'within_3d');
 CREATE TYPE job_status AS ENUM ('requested', 'accepted', 'en_route', 'completed', 'declined', 'cancelled');
 
 -- Users (synced from Clerk)
@@ -12,6 +13,10 @@ CREATE TABLE users (
   email TEXT,
   role user_role NOT NULL,
   trade_type trade_type,
+  display_name TEXT,
+  rating NUMERIC(2, 1),
+  completed_jobs_count INTEGER DEFAULT 0,
+  is_mock BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT tradesperson_needs_trade CHECK (
     role = 'customer' OR trade_type IS NOT NULL
@@ -42,6 +47,8 @@ CREATE TABLE jobs (
   base_price NUMERIC(10, 2) NOT NULL DEFAULT 45.00,
   price NUMERIC(10, 2) NOT NULL,
   surge_multiplier NUMERIC(4, 2) NOT NULL DEFAULT 1.00,
+  service_tier service_tier NOT NULL DEFAULT 'priority',
+  scheduled_for TIMESTAMPTZ,
   tradesperson_lat DOUBLE PRECISION,
   tradesperson_lng DOUBLE PRECISION,
   rating SMALLINT CHECK (rating >= 1 AND rating <= 5),

@@ -1,9 +1,20 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabaseClient";
-import { calculatePrice } from "@/lib/pricing";
-import { fetchSurgeForTrade } from "@/lib/pricing";
-import { BASE_PRICES, TRADE_TYPES, TradeType } from "@/lib/types";
+import {
+  calculateTierPrice,
+  fetchSurgeForTrade,
+  scheduledForTier,
+} from "@/lib/pricing";
+import {
+  BASE_PRICES,
+  SERVICE_TIER_LABELS,
+  TRADE_TYPES,
+  ServiceTier,
+  TradeType,
+} from "@/lib/types";
+
+const SERVICE_TIERS: ServiceTier[] = ["priority", "within_12h", "within_3d"];
 
 export async function POST(req: Request) {
   const { userId } = await auth();
@@ -13,12 +24,17 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const tradeType = body.trade_type as TradeType;
+  const serviceTier = (body.service_tier as ServiceTier) ?? "priority";
   const description = (body.description as string)?.trim();
   const lat = Number(body.lat);
   const lng = Number(body.lng);
+  const locationLabel = (body.location_label as string)?.trim() || null;
 
   if (!tradeType || !TRADE_TYPES.includes(tradeType)) {
     return NextResponse.json({ error: "Invalid trade type" }, { status: 400 });
+  }
+  if (!SERVICE_TIERS.includes(serviceTier)) {
+    return NextResponse.json({ error: "Invalid service tier" }, { status: 400 });
   }
   if (!description || description.length < 5) {
     return NextResponse.json(
@@ -47,22 +63,32 @@ export async function POST(req: Request) {
 
   const { multiplier } = await fetchSurgeForTrade(tradeType, supabase);
   const basePrice = BASE_PRICES[tradeType];
-  const price = calculatePrice(basePrice, multiplier);
+  const price = calculateTierPrice(basePrice, serviceTier, multiplier);
+  const scheduledFor = scheduledForTier(serviceTier);
 
-  const expiresAt = new Date(Date.now() + 30_000).toISOString();
+  const fullDescription = locationLabel
+    ? `${description} · ${locationLabel}`
+    : description;
+
+  const expiresAt =
+    serviceTier === "priority"
+      ? new Date(Date.now() + 30_000).toISOString()
+      : null;
 
   const { data: job, error } = await supabase
     .from("jobs")
     .insert({
       customer_id: userId,
       trade_type: tradeType,
-      description,
+      description: fullDescription,
       lat,
       lng,
       status: "requested",
       base_price: basePrice,
       price,
-      surge_multiplier: multiplier,
+      surge_multiplier: serviceTier === "priority" ? multiplier : 1,
+      service_tier: serviceTier,
+      scheduled_for: scheduledFor,
       expires_at: expiresAt,
     })
     .select()
@@ -72,5 +98,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ job });
+  return NextResponse.json({
+    job,
+    tierLabel: SERVICE_TIER_LABELS[serviceTier],
+  });
 }

@@ -74,7 +74,7 @@ This app is intended to run on **Vercel** with secrets in **Project Settings →
 ### 1. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Open **SQL Editor** and run `supabase/schema.sql`
+2. Open **SQL Editor** and run `supabase/schema.sql` (or `supabase/migrations/002_uber_tiers.sql` if upgrading)
 3. Under **Project Settings → API**, copy:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon` public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

@@ -29,6 +29,10 @@ h6 {
   padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
 }
 
+.pt-safe-header {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+}
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

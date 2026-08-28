@@ -42,7 +42,7 @@ export default function RequestFlowHeader({
   }
 
   return (
-    <header className="sticky top-0 z-20 bg-white border-b border-gray-100 safe-top">
+    <header className="sticky top-0 z-20 bg-white border-b border-gray-100 pt-safe-header">
       <div className="mx-auto flex max-w-lg items-center justify-between px-2 py-2">
         <div className="flex items-center gap-1 min-w-0 flex-1">
           {showBack ? (

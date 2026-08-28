@@ -222,18 +222,18 @@ export default function JobTrackingPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
             {TRADE_LABELS[job.trade_type]}
           </p>
-          <p className="font-semibold text-black mt-1">
+          <p className="font-heading font-semibold text-black mt-1">
             {STATUS_LABELS[job.status]}
           </p>
           <p className="text-sm text-gray-600 mt-1">{job.description}</p>
-          <p className="text-lg font-bold text-black mt-2">
+          <p className="font-heading text-lg font-bold text-black mt-2">
             £{Number(job.price).toFixed(2)}
           </p>
         </div>
 
         {job.status === "arrived" && !rated && (
           <div className="rounded-2xl bg-white p-6 text-center ring-1 ring-gray-100">
-            <h2 className="font-bold text-black">How was your service?</h2>
+            <h2 className="font-heading font-bold text-black">How was your service?</h2>
             <div className="mt-4 flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button

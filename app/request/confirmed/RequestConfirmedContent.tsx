@@ -26,7 +26,7 @@ export default function RequestConfirmedContent() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-black text-2xl text-white">
             ✓
           </div>
-          <h2 className="mt-6 text-2xl font-bold text-black">
+          <h2 className="font-heading mt-6 text-2xl font-bold text-black">
             {SERVICE_TIER_LABELS[tier]} booked
           </h2>
           <p className="mt-2 text-gray-500">

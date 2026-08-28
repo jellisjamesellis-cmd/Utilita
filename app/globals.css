@@ -13,6 +13,20 @@ body {
   color: var(--foreground);
   background: var(--background);
   min-height: 100vh;
+  font-family: var(--font-body), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), sans-serif;
+}
+
+.pt-safe-logo {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
 }
 
 .scrollbar-hide {

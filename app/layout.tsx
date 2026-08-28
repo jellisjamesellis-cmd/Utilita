@@ -1,6 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 const THEME_COLOR = "#15171B";
 
@@ -43,8 +57,11 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className="antialiased">{children}</body>
+      <html
+        lang="en"
+        className={`${spaceGrotesk.variable} ${ibmPlexSans.variable}`}
+      >
+        <body className="font-body antialiased">{children}</body>
       </html>
     </ClerkProvider>
   );

@@ -118,7 +118,7 @@ export default function DashboardPage() {
             <Link href="/" className="text-sm text-brand-600 hover:underline">
               Home
             </Link>
-            <h1 className="text-lg font-bold text-slate-900">Dashboard</h1>
+            <h1 className="font-heading text-lg font-bold text-slate-900">Dashboard</h1>
             {user?.trade_type && (
               <p className="text-sm text-slate-500">
                 {TRADE_LABELS[user.trade_type]}
@@ -132,7 +132,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
         <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5">
           <div>
-            <p className="font-semibold text-slate-900">Available now</p>
+            <p className="font-heading font-semibold text-slate-900">Available now</p>
             <p className="text-sm text-slate-500">
               {available
                 ? "You’ll receive incoming job requests"
@@ -157,7 +157,7 @@ export default function DashboardPage() {
 
         {activeJob && (
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="font-heading mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               Active job
             </h2>
             <JobCard job={activeJob} />
@@ -176,7 +176,7 @@ export default function DashboardPage() {
         )}
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="font-heading mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
             Incoming requests
           </h2>
 

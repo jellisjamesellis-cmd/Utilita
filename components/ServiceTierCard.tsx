@@ -26,7 +26,7 @@ export default function ServiceTierCard({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-black">{quote.label}</h3>
+            <h3 className="font-heading text-lg font-bold text-black">{quote.label}</h3>
             {quote.etaLabel && quote.tier === "priority" && (
               <span className="rounded-full bg-black px-2.5 py-0.5 text-xs font-semibold text-white">
                 {quote.etaLabel}
@@ -46,7 +46,7 @@ export default function ServiceTierCard({
             <p className="mt-2 text-xs text-gray-400">Book ahead · best value</p>
           )}
         </div>
-        <p className="shrink-0 text-xl font-bold text-black">
+        <p className="font-heading shrink-0 text-xl font-bold text-black">
           £{quote.price.toFixed(2)}
         </p>
       </div>

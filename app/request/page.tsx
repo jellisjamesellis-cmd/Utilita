@@ -72,7 +72,7 @@ export default function RequestHomePage() {
                 <Icon {...TRADE_ICON_PROPS} className="text-black" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-xl font-bold text-black leading-tight">
+                <h2 className="font-heading text-xl font-bold text-black leading-tight">
                   {TRADE_LABELS[tradeType]}
                 </h2>
                 <p className="text-sm text-gray-600 mt-0.5">
@@ -87,7 +87,7 @@ export default function RequestHomePage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                     Priority from
                   </p>
-                  <p className="text-lg font-bold text-black">
+                  <p className="font-heading text-lg font-bold text-black">
                     £{teaser.priorityPrice.toFixed(2)}
                     {teaser.surgeMultiplier > 1.05 && (
                       <span className="ml-2 text-xs font-medium text-amber-700">
@@ -101,7 +101,7 @@ export default function RequestHomePage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                       Est. arrival
                     </p>
-                    <p className="text-lg font-bold text-black">
+                    <p className="font-heading text-lg font-bold text-black">
                       ~{teaser.etaMinutes} min
                     </p>
                   </div>

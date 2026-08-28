@@ -97,9 +97,9 @@ function LoginContent() {
   return (
     <main className="min-h-screen bg-[#f6f6f6] flex flex-col">
       <div className="mx-auto w-full max-w-lg flex-1 flex flex-col px-5 pb-8">
-        <header className="flex items-center justify-between pt-5 pb-6">
+        <header className="flex items-center justify-between pt-safe-logo pb-6">
           <Link
-            href="/role"
+            href="/"
             className="text-sm font-medium text-gray-600 hover:text-black"
           >
             ← Back
@@ -114,7 +114,7 @@ function LoginContent() {
         </header>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-black">
+          <h1 className="font-heading text-2xl font-bold text-black">
             {isSignUp ? "Create account" : "Sign in"}
           </h1>
           <p className="mt-1 text-sm text-gray-500">

@@ -34,7 +34,7 @@ export default function TradeCategoryBanner({
 
   return (
     <div className="bg-black text-white px-4 pt-5 pb-6">
-      <p className="text-xs uppercase tracking-widest text-white/60 mb-5">
+      <p className="font-heading text-xs uppercase tracking-widest text-white/60 mb-5">
         What do you need?
       </p>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
@@ -60,7 +60,7 @@ export default function TradeCategoryBanner({
               }`}
             >
               <Icon {...TRADE_ICON_PROPS} className="shrink-0" />
-              <span className="text-sm font-semibold whitespace-nowrap">
+              <span className="font-heading text-sm font-semibold whitespace-nowrap">
                 {TRADE_LABELS[trade]}
               </span>
             </button>

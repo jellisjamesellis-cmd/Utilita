@@ -26,12 +26,12 @@ export default function JobCard({
           <p className="text-xs font-medium uppercase tracking-wide text-brand-600">
             {TRADE_LABELS[job.trade_type]}
           </p>
-          <h3 className="mt-1 font-semibold text-slate-900 line-clamp-2">
+          <h3 className="font-heading mt-1 font-semibold text-slate-900 line-clamp-2">
             {job.description}
           </h3>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-lg font-bold text-slate-900">
+          <p className="font-heading text-lg font-bold text-slate-900">
             £{Number(job.price).toFixed(2)}
           </p>
           {job.surge_multiplier > 1.05 && (

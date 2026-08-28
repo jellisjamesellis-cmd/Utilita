@@ -68,7 +68,7 @@ export default function RequestFlowHeader({
             <div className="w-11" />
           )}
           <div className="min-w-0 py-1">
-            <h1 className="truncate text-base font-bold text-black">{title}</h1>
+            <h1 className="truncate font-heading text-base font-bold text-black">{title}</h1>
             {subtitle && (
               <p className="truncate text-xs text-gray-500">{subtitle}</p>
             )}

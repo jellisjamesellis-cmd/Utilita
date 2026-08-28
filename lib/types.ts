@@ -1,13 +1,16 @@
 export const TRADE_TYPES = [
-  "handyman",
   "painter",
+  "plumber",
   "mover",
+  "handyman",
   "cleaner",
 ] as const;
 
 export type TradeType = (typeof TRADE_TYPES)[number];
 
 export type UserRole = "customer" | "tradesperson";
+
+export type ServiceTier = "priority" | "within_12h" | "within_3d";
 
 export type JobStatus =
   | "requested"
@@ -22,6 +25,10 @@ export interface User {
   email: string | null;
   role: UserRole;
   trade_type: TradeType | null;
+  display_name: string | null;
+  rating: number | null;
+  completed_jobs_count: number | null;
+  is_mock: boolean;
   created_at: string;
 }
 
@@ -46,6 +53,8 @@ export interface Job {
   base_price: number;
   price: number;
   surge_multiplier: number;
+  service_tier: ServiceTier;
+  scheduled_for: string | null;
   tradesperson_lat: number | null;
   tradesperson_lng: number | null;
   rating: number | null;
@@ -55,17 +64,39 @@ export interface Job {
 }
 
 export const TRADE_LABELS: Record<TradeType, string> = {
-  handyman: "Handyman",
   painter: "Painter",
+  plumber: "Plumber",
   mover: "Mover",
+  handyman: "Handyman",
   cleaner: "Cleaner",
 };
 
+export const TRADE_ICONS: Record<TradeType, string> = {
+  painter: "🎨",
+  plumber: "🔧",
+  mover: "📦",
+  handyman: "🛠️",
+  cleaner: "✨",
+};
+
 export const BASE_PRICES: Record<TradeType, number> = {
-  handyman: 55,
   painter: 65,
+  plumber: 70,
   mover: 75,
+  handyman: 55,
   cleaner: 45,
+};
+
+export const SERVICE_TIER_LABELS: Record<ServiceTier, string> = {
+  priority: "Priority",
+  within_12h: "Within 12 hours",
+  within_3d: "Within 3 days",
+};
+
+export const SERVICE_TIER_DESCRIPTIONS: Record<ServiceTier, string> = {
+  priority: "Soonest available tradesperson",
+  within_12h: "Standard pricing · no surge",
+  within_3d: "Lowest price · scheduled visit",
 };
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
@@ -79,3 +110,11 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
 
 /** Default map center: central London for demo */
 export const DEFAULT_CENTER: [number, number] = [51.5074, -0.1278];
+
+/** Greater London bounding box for seed data */
+export const LONDON_BOUNDS = {
+  latMin: 51.28,
+  latMax: 51.69,
+  lngMin: -0.51,
+  lngMax: 0.33,
+};

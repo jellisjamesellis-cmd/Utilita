@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     "Live dispatch demo for handyman, painter, mover, and cleaner services",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{

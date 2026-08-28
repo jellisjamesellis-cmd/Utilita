@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
-const THEME_COLOR = "#111111";
+const THEME_COLOR = "#15171B";
 
 export const metadata: Metadata = {
   title: "Utilita — On-demand trades",

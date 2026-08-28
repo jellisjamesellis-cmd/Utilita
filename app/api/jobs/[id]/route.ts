@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabaseClient";
 import { mockStartPosition } from "@/lib/simulateMovement";
 
+async function fetchTradespersonProfile(
+  supabase: ReturnType<typeof import("@/lib/supabaseClient").createServiceClient>,
+  tradespersonId: string | null
+) {
+  if (!tradespersonId) return null;
+  const { data } = await supabase
+    .from("users")
+    .select("id, display_name, rating, completed_jobs_count, trade_type")
+    .eq("id", tradespersonId)
+    .single();
+  return data;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -20,7 +33,12 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
 
-  return NextResponse.json({ job });
+  const tradesperson = await fetchTradespersonProfile(
+    supabase,
+    job.tradesperson_id
+  );
+
+  return NextResponse.json({ job, tradesperson });
 }
 
 export async function PATCH(
@@ -46,10 +64,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
+  const isCustomer = job.customer_id === userId;
+  const isAssignedTp = job.tradesperson_id === userId;
   const updates: Record<string, unknown> = {};
 
   if (body.tradesperson_lat != null && body.tradesperson_lng != null) {
-    if (job.customer_id !== userId && job.tradesperson_id !== userId) {
+    if (!isCustomer && !isAssignedTp) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     updates.tradesperson_lat = body.tradesperson_lat;
@@ -59,11 +79,21 @@ export async function PATCH(
     }
   }
 
-  if (body.status === "completed" && job.tradesperson_id === userId) {
-    updates.status = "completed";
+  if (body.status === "arrived" && isCustomer) {
+    if (["accepted", "en_route"].includes(job.status)) {
+      updates.status = "arrived";
+      updates.tradesperson_lat = job.lat;
+      updates.tradesperson_lng = job.lng;
+    }
   }
 
-  if (body.rating != null && job.customer_id === userId) {
+  if (body.status === "completed" && (isAssignedTp || isCustomer)) {
+    if (["arrived", "en_route", "accepted"].includes(job.status)) {
+      updates.status = "completed";
+    }
+  }
+
+  if (body.rating != null && isCustomer) {
     const rating = Number(body.rating);
     if (rating >= 1 && rating <= 5 && job.status === "completed") {
       updates.rating = rating;
@@ -85,7 +115,12 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ job: updated });
+  const tradesperson = await fetchTradespersonProfile(
+    supabase,
+    updated.tradesperson_id
+  );
+
+  return NextResponse.json({ job: updated, tradesperson });
 }
 
 export async function POST(
@@ -99,7 +134,7 @@ export async function POST(
 
   const { id } = await params;
   const body = await req.json();
-  const action = body.action as "accept" | "decline" | "complete";
+  const action = body.action as "accept" | "decline" | "complete" | "auto_accept";
   const supabase = createServiceClient();
 
   const { data: job } = await supabase
@@ -112,10 +147,41 @@ export async function POST(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
+  if (action === "auto_accept") {
+    if (job.customer_id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (job.status !== "requested" || !job.tradesperson_id) {
+      return NextResponse.json({ error: "Job not eligible" }, { status: 409 });
+    }
+
+    const { data: updated, error } = await supabase
+      .from("jobs")
+      .update({
+        status: "accepted",
+        expires_at: null,
+      })
+      .eq("id", id)
+      .eq("status", "requested")
+      .select()
+      .single();
+
+    if (error || !updated) {
+      return NextResponse.json({ error: "Could not accept job" }, { status: 409 });
+    }
+
+    const tradesperson = await fetchTradespersonProfile(
+      supabase,
+      updated.tradesperson_id
+    );
+
+    return NextResponse.json({ job: updated, tradesperson });
+  }
+
   if (action === "accept") {
     const { data: tp } = await supabase
       .from("users")
-      .select("role, trade_type")
+      .select("role, trade_type, is_mock")
       .eq("id", userId)
       .single();
 
@@ -123,7 +189,7 @@ export async function POST(
       return NextResponse.json({ error: "Not eligible" }, { status: 403 });
     }
 
-    if (job.status !== "requested") {
+    if (job.status !== "requested" || job.tradesperson_id) {
       return NextResponse.json({ error: "Job no longer available" }, { status: 409 });
     }
 
@@ -140,6 +206,7 @@ export async function POST(
       })
       .eq("id", id)
       .eq("status", "requested")
+      .is("tradesperson_id", null)
       .select()
       .single();
 
@@ -166,7 +233,6 @@ export async function POST(
       return NextResponse.json({ error: "Job not open" }, { status: 409 });
     }
 
-    // Extend expiry for next tradesperson rather than fully declining the job
     const expiresAt = new Date(Date.now() + 30_000).toISOString();
     await supabase
       .from("jobs")

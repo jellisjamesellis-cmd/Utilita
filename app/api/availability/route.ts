@@ -26,6 +26,7 @@ export async function GET() {
     .eq("trade_type", user.trade_type!)
     .eq("status", "requested")
     .eq("service_tier", "priority")
+    .is("tradesperson_id", null)
     .order("created_at", { ascending: false });
 
   if (error) {

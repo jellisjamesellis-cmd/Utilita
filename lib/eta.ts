@@ -50,6 +50,35 @@ export function findNearestTradesperson(
   return { person: nearest, distanceKm: minDistance, etaMinutes: eta };
 }
 
+export async function fetchMockTradespersonLocations(
+  tradeType: TradeType,
+  supabase: ReturnType<typeof import("./supabaseClient").createServiceClient>
+): Promise<TradespersonLocation[]> {
+  const { data: users } = await supabase
+    .from("users")
+    .select("id")
+    .eq("role", "tradesperson")
+    .eq("trade_type", tradeType)
+    .eq("is_mock", true);
+
+  const ids = (users ?? []).map((u) => u.id);
+  if (ids.length === 0) return [];
+
+  const { data: rows } = await supabase
+    .from("availability")
+    .select("tradesperson_id, is_available, current_lat, current_lng")
+    .in("tradesperson_id", ids)
+    .not("current_lat", "is", null)
+    .not("current_lng", "is", null);
+
+  return (rows ?? []).map((row) => ({
+    tradesperson_id: row.tradesperson_id,
+    lat: row.current_lat as number,
+    lng: row.current_lng as number,
+    is_available: row.is_available,
+  }));
+}
+
 export async function fetchTradespersonLocations(
   tradeType: TradeType,
   supabase: ReturnType<typeof import("./supabaseClient").createServiceClient>

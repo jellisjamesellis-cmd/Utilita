@@ -5,7 +5,7 @@
 CREATE TYPE user_role AS ENUM ('customer', 'tradesperson');
 CREATE TYPE trade_type AS ENUM ('handyman', 'painter', 'mover', 'cleaner', 'plumber');
 CREATE TYPE service_tier AS ENUM ('priority', 'within_12h', 'within_3d');
-CREATE TYPE job_status AS ENUM ('requested', 'accepted', 'en_route', 'completed', 'declined', 'cancelled');
+CREATE TYPE job_status AS ENUM ('requested', 'accepted', 'en_route', 'arrived', 'completed', 'declined', 'cancelled');
 
 -- Users (synced from Clerk)
 CREATE TABLE users (

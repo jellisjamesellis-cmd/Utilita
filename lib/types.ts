@@ -16,9 +16,18 @@ export type JobStatus =
   | "requested"
   | "accepted"
   | "en_route"
+  | "arrived"
   | "completed"
   | "declined"
   | "cancelled";
+
+export interface TradespersonProfile {
+  id: string;
+  display_name: string | null;
+  rating: number | null;
+  completed_jobs_count: number | null;
+  trade_type: TradeType | null;
+}
 
 export interface User {
   id: string;
@@ -101,8 +110,9 @@ export const SERVICE_TIER_DESCRIPTIONS: Record<ServiceTier, string> = {
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
   requested: "Finding a tradesperson…",
-  accepted: "Accepted — preparing to leave",
+  accepted: "On the way",
   en_route: "On the way",
+  arrived: "Your tradesperson has arrived",
   completed: "Completed",
   declined: "Declined",
   cancelled: "Cancelled",

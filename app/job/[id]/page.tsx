@@ -5,19 +5,19 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import DynamicMapView from "@/components/DynamicMapView";
+import TradespersonCard from "@/components/TradespersonCard";
 import type { MapPin } from "@/components/MapView";
 import { useJobRealtime } from "@/lib/hooks";
-import {
-  simulateMovement,
-  formatEta,
-  distanceKm,
-} from "@/lib/simulateMovement";
+import { liveEtaMinutes } from "@/lib/liveEta";
+import { simulateMovement } from "@/lib/simulateMovement";
 import { STATUS_LABELS, TRADE_LABELS } from "@/lib/types";
+
+const MOVEMENT_DURATION_MS = 150_000; // ~2.5 min
 
 export default function JobTrackingPage() {
   const params = useParams();
   const jobId = params.id as string;
-  const { job, loading } = useJobRealtime(jobId);
+  const { job, tradesperson, loading } = useJobRealtime(jobId);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const [simPosition, setSimPosition] = useState<{
     lat: number;
@@ -25,9 +25,41 @@ export default function JobTrackingPage() {
   } | null>(null);
   const [rating, setRating] = useState(0);
   const [rated, setRated] = useState(false);
+  const [searching, setSearching] = useState(true);
   const simStarted = useRef(false);
+  const acceptTriggered = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // Auto-accept after 2–5s simulated matching delay
+  useEffect(() => {
+    if (!job) return;
+    if (
+      job.status !== "requested" ||
+      !job.tradesperson_id ||
+      acceptTriggered.current
+    ) {
+      if (job.status !== "requested") setSearching(false);
+      return;
+    }
+
+    acceptTriggered.current = true;
+    const delay = 2000 + Math.random() * 3000;
+
+    const timer = setTimeout(async () => {
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "auto_accept" }),
+      });
+      if (res.ok) {
+        setSearching(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [job, jobId]);
+
+  // Simulated movement toward customer
   useEffect(() => {
     if (!job) return;
 
@@ -38,6 +70,7 @@ export default function JobTrackingPage() {
 
     if (!canSimulate || simStarted.current) return;
     simStarted.current = true;
+    setSearching(false);
 
     const start = {
       lat: job.tradesperson_lat!,
@@ -48,8 +81,9 @@ export default function JobTrackingPage() {
     cleanupRef.current = simulateMovement(
       start,
       destination,
-      (position, progress, eta) => {
+      (position, progress) => {
         setSimPosition(position);
+        const eta = liveEtaMinutes(position, destination);
         setEtaMinutes(eta);
 
         fetch(`/api/jobs/${jobId}`, {
@@ -60,8 +94,17 @@ export default function JobTrackingPage() {
             tradesperson_lng: position.lng,
           }),
         }).catch(() => {});
+
+        if (progress >= 1) {
+          fetch(`/api/jobs/${jobId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "arrived" }),
+          }).catch(() => {});
+          setEtaMinutes(0);
+        }
       },
-      { durationMs: 120_000, intervalMs: 3000 }
+      { durationMs: MOVEMENT_DURATION_MS, intervalMs: 2000 }
     );
 
     return () => {
@@ -74,10 +117,18 @@ export default function JobTrackingPage() {
       setRating(job.rating);
       setRated(true);
     }
-  }, [job?.rating]);
+    if (job?.status === "arrived" || job?.status === "en_route" || job?.status === "accepted") {
+      setSearching(false);
+    }
+  }, [job?.rating, job?.status]);
 
   async function submitRating(stars: number) {
     setRating(stars);
+    await fetch(`/api/jobs/${jobId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "completed" }),
+    });
     const res = await fetch(`/api/jobs/${jobId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -88,17 +139,17 @@ export default function JobTrackingPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-500">Loading job…</p>
+      <main className="min-h-screen flex items-center justify-center bg-[#f6f6f6]">
+        <p className="text-gray-500">Loading job…</p>
       </main>
     );
   }
 
   if (!job) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
-        <p className="text-slate-600">Job not found.</p>
-        <Link href="/request" className="text-brand-600 hover:underline">
+      <main className="min-h-screen flex flex-col items-center justify-center bg-[#f6f6f6] gap-4">
+        <p className="text-gray-600">Job not found.</p>
+        <Link href="/request" className="text-black font-semibold underline">
           Back to request
         </Link>
       </main>
@@ -108,7 +159,10 @@ export default function JobTrackingPage() {
   const tpLat = simPosition?.lat ?? job.tradesperson_lat;
   const tpLng = simPosition?.lng ?? job.tradesperson_lng;
   const showTradesperson =
-    tpLat != null && tpLng != null && job.status !== "requested";
+    tpLat != null &&
+    tpLng != null &&
+    job.status !== "requested" &&
+    job.tradesperson_id;
 
   const pins: MapPin[] = [
     {
@@ -123,102 +177,93 @@ export default function JobTrackingPage() {
     pins.push({
       lat: tpLat!,
       lng: tpLng!,
-      label: "Tradesperson (simulated)",
+      label: tradesperson?.display_name ?? "Tradesperson",
       type: "tradesperson",
     });
   }
 
-  const distance =
-    showTradesperson && tpLat != null && tpLng != null
-      ? distanceKm({ lat: tpLat, lng: tpLng }, { lat: job.lat, lng: job.lng })
-      : null;
+  const isLive =
+    job.status === "accepted" ||
+    job.status === "en_route" ||
+    job.status === "arrived";
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <div>
-            <Link href="/request" className="text-sm text-brand-600 hover:underline">
-              ← New request
-            </Link>
-            <h1 className="text-lg font-bold text-slate-900">
-              {TRADE_LABELS[job.trade_type]} job
-            </h1>
-          </div>
-          <UserButton afterSignOutUrl="/" />
-        </div>
+    <main className="min-h-screen bg-[#f6f6f6] flex flex-col">
+      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+        <Link href="/request" className="text-sm font-semibold text-black">
+          ← Back
+        </Link>
+        <UserButton afterSignOutUrl="/" />
       </header>
 
-      <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-brand-600">
-                {STATUS_LABELS[job.status]}
-              </p>
-              <p className="mt-1 text-slate-900">{job.description}</p>
-            </div>
-            <p className="text-xl font-bold text-slate-900 shrink-0">
-              £{Number(job.price).toFixed(2)}
-            </p>
-          </div>
-
-          {job.status === "requested" && (
-            <p className="mt-4 text-sm text-slate-500 animate-pulse">
-              Searching for an available {TRADE_LABELS[job.trade_type].toLowerCase()}…
-            </p>
-          )}
-
-          {(job.status === "accepted" || job.status === "en_route") && (
-            <div className="mt-4 flex flex-wrap gap-4 text-sm">
-              <span className="rounded-full bg-green-100 text-green-800 px-3 py-1 font-medium">
-                {etaMinutes != null ? formatEta(etaMinutes) : "Calculating ETA…"}
-              </span>
-              {distance != null && (
-                <span className="text-slate-500">
-                  {(distance * 1000).toFixed(0)}m away (simulated)
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
+      <div className="relative flex-1 min-h-[50vh]">
         <DynamicMapView
           center={[job.lat, job.lng]}
           zoom={14}
           pins={pins}
-          className="h-96 w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm"
+          className="absolute inset-0 h-full w-full"
         />
+      </div>
 
-        <p className="text-xs text-center text-slate-400">
-          Blue = you · Green = tradesperson · Movement is simulated for demo
-        </p>
+      <div className="relative z-10 -mt-6 px-4 pb-8 space-y-3 max-w-lg mx-auto w-full">
+        {(tradesperson || job.tradesperson_id) && (
+          <TradespersonCard
+            tradesperson={
+              tradesperson ?? {
+                id: job.tradesperson_id!,
+                display_name: "Your tradesperson",
+                rating: 4.8,
+                completed_jobs_count: 120,
+                trade_type: job.trade_type,
+              }
+            }
+            etaMinutes={isLive && job.status !== "arrived" ? etaMinutes : null}
+            status={job.status}
+            searching={searching && job.status === "requested"}
+          />
+        )}
 
-        {job.status === "completed" && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-            <h2 className="font-semibold text-slate-900">Job complete</h2>
-            <p className="mt-1 text-sm text-slate-500">How did it go?</p>
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-gray-100">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            {TRADE_LABELS[job.trade_type]}
+          </p>
+          <p className="font-semibold text-black mt-1">
+            {STATUS_LABELS[job.status]}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">{job.description}</p>
+          <p className="text-lg font-bold text-black mt-2">
+            £{Number(job.price).toFixed(2)}
+          </p>
+        </div>
+
+        {job.status === "arrived" && !rated && (
+          <div className="rounded-2xl bg-white p-6 text-center ring-1 ring-gray-100">
+            <h2 className="font-bold text-black">How was your service?</h2>
             <div className="mt-4 flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
-                  disabled={rated}
                   onClick={() => submitRating(star)}
-                  className={`text-3xl transition-transform hover:scale-110 ${
-                    star <= rating ? "opacity-100" : "opacity-30"
-                  }`}
+                  className="text-3xl hover:scale-110 transition-transform"
                   aria-label={`Rate ${star} stars`}
                 >
                   ★
                 </button>
               ))}
             </div>
-            {rated && (
-              <p className="mt-2 text-sm text-brand-600">Thanks for your rating!</p>
-            )}
           </div>
         )}
+
+        {job.status === "completed" && rated && (
+          <p className="text-center text-sm text-green-600 font-medium">
+            Thanks for your rating!
+          </p>
+        )}
+
+        <p className="text-xs text-center text-gray-400">
+          Simulated dispatch · not real GPS
+        </p>
       </div>
     </main>
   );

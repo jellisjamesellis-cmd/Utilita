@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Job } from "@/lib/types";
+import { Job, TradespersonProfile } from "@/lib/types";
 
 export function useJobRealtime(jobId: string | null) {
   const [job, setJob] = useState<Job | null>(null);
+  const [tradesperson, setTradesperson] = useState<TradespersonProfile | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +20,10 @@ export function useJobRealtime(jobId: string | null) {
       const res = await fetch(`/api/jobs/${jobId}`);
       if (res.ok) {
         const data = await res.json();
-        if (!cancelled) setJob(data.job);
+        if (!cancelled) {
+          setJob(data.job);
+          setTradesperson(data.tradesperson ?? null);
+        }
       }
       if (!cancelled) setLoading(false);
     }
@@ -46,7 +52,18 @@ export function useJobRealtime(jobId: string | null) {
     };
   }, [jobId]);
 
-  return { job, loading, setJob };
+  useEffect(() => {
+    if (!job?.tradesperson_id || tradesperson?.id === job.tradesperson_id) {
+      return;
+    }
+    fetch(`/api/jobs/${jobId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.tradesperson) setTradesperson(data.tradesperson);
+      });
+  }, [job?.tradesperson_id, jobId, tradesperson?.id]);
+
+  return { job, tradesperson, loading, setJob };
 }
 
 export function useOpenJobsRealtime(tradeType: string | null, enabled: boolean) {

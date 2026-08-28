@@ -6,6 +6,7 @@ import {
   fetchSurgeForTrade,
   scheduledForTier,
 } from "@/lib/pricing";
+import { findNearestMockTradesperson } from "@/lib/matchMockTradesperson";
 import {
   BASE_PRICES,
   SERVICE_TIER_LABELS,
@@ -70,10 +71,24 @@ export async function POST(req: Request) {
     ? `${description} · ${locationLabel}`
     : description;
 
-  const expiresAt =
-    serviceTier === "priority"
-      ? new Date(Date.now() + 30_000).toISOString()
-      : null;
+  const expiresAt = null;
+
+  let matchPayload: Record<string, unknown> = {};
+
+  if (serviceTier === "priority") {
+    const match = await findNearestMockTradesperson(tradeType, { lat, lng });
+    if (match) {
+      matchPayload = {
+        tradesperson_id: match.tradesperson_id,
+        tradesperson_lat: match.lat,
+        tradesperson_lng: match.lng,
+      };
+      await supabase
+        .from("availability")
+        .update({ is_available: false })
+        .eq("tradesperson_id", match.tradesperson_id);
+    }
+  }
 
   const { data: job, error } = await supabase
     .from("jobs")
@@ -90,6 +105,7 @@ export async function POST(req: Request) {
       service_tier: serviceTier,
       scheduled_for: scheduledFor,
       expires_at: expiresAt,
+      ...matchPayload,
     })
     .select()
     .single();

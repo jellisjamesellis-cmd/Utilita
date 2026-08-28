@@ -59,8 +59,7 @@ export default function RequestHomePage() {
       <div className="mx-auto w-full max-w-lg flex-1 flex flex-col">
         <RequestFlowHeader
           title="Book a tradesperson"
-          showBack
-          backHref="/"
+          showBack={false}
           rightSlot={<UserButton afterSignOutUrl="/" />}
         />
 

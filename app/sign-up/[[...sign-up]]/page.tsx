@@ -1,9 +1,10 @@
-import { SignUp } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
-export default function SignUpPage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50">
-      <SignUp />
-    </main>
-  );
+export default function SignUpRedirect({
+  searchParams,
+}: {
+  searchParams: { role?: string };
+}) {
+  const role = searchParams.role ?? "customer";
+  redirect(`/login?role=${role}&mode=sign-up`);
 }

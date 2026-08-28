@@ -1,9 +1,10 @@
-import { SignIn } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
-export default function SignInPage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50">
-      <SignIn />
-    </main>
-  );
+export default function SignInRedirect({
+  searchParams,
+}: {
+  searchParams: { role?: string };
+}) {
+  const role = searchParams.role ?? "customer";
+  redirect(`/login?role=${role}`);
 }

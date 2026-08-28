@@ -1,14 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import RequestFlowHeader from "@/components/RequestFlowHeader";
+import { clearPendingBooking } from "@/lib/requestDraft";
 import { SERVICE_TIER_LABELS, ServiceTier } from "@/lib/types";
 
 export default function RequestConfirmedContent() {
   const params = useSearchParams();
+  const router = useRouter();
   const tier = (params.get("tier") as ServiceTier) ?? "within_12h";
   const jobId = params.get("job");
+
+  function bookAnother() {
+    clearPendingBooking();
+    router.push("/request");
+  }
 
   return (
     <main className="min-h-screen bg-[#f6f6f6]">
@@ -29,11 +36,18 @@ export default function RequestConfirmedContent() {
           {jobId && (
             <p className="mt-4 text-xs font-mono text-gray-400">Ref: {jobId}</p>
           )}
-          <Link
-            href="/request"
-            className="mt-8 inline-block rounded-xl bg-black px-8 py-3 font-semibold text-white"
+          <button
+            type="button"
+            onClick={bookAnother}
+            className="mt-8 inline-block rounded-xl bg-black px-8 py-3 font-semibold text-white hover:bg-gray-900"
           >
             Book another job
+          </button>
+          <Link
+            href="/"
+            className="mt-4 block text-sm text-gray-500 underline"
+          >
+            Back to home
           </Link>
         </div>
       </div>

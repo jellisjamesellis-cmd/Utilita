@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import RequestFlowHeader from "@/components/RequestFlowHeader";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -189,14 +189,9 @@ export default function JobTrackingPage() {
 
   return (
     <main className="min-h-screen bg-[#f6f6f6] flex flex-col">
-      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <Link href="/request" className="text-sm font-semibold text-black">
-          ← Back
-        </Link>
-        <UserButton afterSignOutUrl="/" />
-      </header>
+      <RequestFlowHeader title={TRADE_LABELS[job.trade_type]} backHref="/request" />
 
-      <div className="relative flex-1 min-h-[50vh]">
+      <div className="relative flex-1 min-h-[45vh]">
         <DynamicMapView
           center={[job.lat, job.lng]}
           zoom={14}

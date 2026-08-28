@@ -116,7 +116,7 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <div>
             <Link href="/" className="text-sm text-brand-600 hover:underline">
-              ← Utilita
+              Home
             </Link>
             <h1 className="text-lg font-bold text-slate-900">Dashboard</h1>
             {user?.trade_type && (

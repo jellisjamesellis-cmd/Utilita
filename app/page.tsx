@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -18,20 +19,17 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [tradeType, setTradeType] = useState<TradeType>("handyman");
+  const [showRolePicker, setShowRolePicker] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
+    if (!isLoaded || !isSignedIn || showRolePicker) return;
 
     fetch("/api/users/sync")
       .then((r) => r.json())
       .then((data) => {
-        if (data.user) {
-          setDbUser(data.user);
-          if (data.user.role === "customer") router.push("/request");
-          if (data.user.role === "tradesperson") router.push("/dashboard");
-        }
+        if (data.user) setDbUser(data.user);
       });
-  }, [isLoaded, isSignedIn, router]);
+  }, [isLoaded, isSignedIn, showRolePicker]);
 
   async function handleContinue() {
     if (!selectedRole) return;
@@ -47,6 +45,9 @@ export default function HomePage() {
     });
 
     if (res.ok) {
+      const updated = await res.json();
+      setDbUser(updated.user);
+      setShowRolePicker(false);
       router.push(selectedRole === "customer" ? "/request" : "/dashboard");
     } else {
       setLoading(false);
@@ -89,8 +90,42 @@ export default function HomePage() {
                 </button>
               </SignInButton>
             </div>
-          ) : dbUser ? (
-            <p className="mt-8 text-slate-500">Redirecting…</p>
+          ) : dbUser?.role === "customer" && !showRolePicker ? (
+            <div className="mt-8 space-y-4">
+              <p className="text-slate-600">Welcome back. What would you like to do?</p>
+              <Link
+                href="/request"
+                className="block w-full max-w-sm rounded-xl bg-brand-600 px-6 py-4 text-center font-semibold text-white hover:bg-brand-700"
+              >
+                Book a tradesperson
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowRolePicker(true)}
+                className="text-sm text-slate-500 underline"
+              >
+                Switch role
+              </button>
+            </div>
+          ) : dbUser?.role === "tradesperson" && !showRolePicker ? (
+            <div className="mt-8 space-y-4">
+              <p className="text-slate-600">
+                Signed in as {TRADE_LABELS[dbUser.trade_type!]} tradesperson.
+              </p>
+              <Link
+                href="/dashboard"
+                className="block w-full max-w-sm rounded-xl bg-brand-600 px-6 py-4 text-center font-semibold text-white hover:bg-brand-700"
+              >
+                Open dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowRolePicker(true)}
+                className="text-sm text-slate-500 underline"
+              >
+                Switch role
+              </button>
+            </div>
           ) : (
             <div className="mt-8 space-y-6">
               <p className="font-medium text-slate-900">
@@ -107,10 +142,7 @@ export default function HomePage() {
                       : "border-slate-200 hover:border-slate-300"
                   }`}
                 >
-                  <span className="text-2xl">🛠️</span>
-                  <h3 className="mt-2 font-semibold text-slate-900">
-                    I need help
-                  </h3>
+                  <h3 className="font-semibold text-slate-900">I need help</h3>
                   <p className="mt-1 text-sm text-slate-600">
                     Request a tradesperson and track them on the map.
                   </p>
@@ -125,8 +157,7 @@ export default function HomePage() {
                       : "border-slate-200 hover:border-slate-300"
                   }`}
                 >
-                  <span className="text-2xl">🔧</span>
-                  <h3 className="mt-2 font-semibold text-slate-900">
+                  <h3 className="font-semibold text-slate-900">
                     I&apos;m a tradesperson
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
